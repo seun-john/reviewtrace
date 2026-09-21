@@ -1,0 +1,25 @@
+version: 1
+issues:
+  - id: RT-001
+    reviewer: Client
+    comment: Clarify the payment schedule.
+    anchor: Payment is due on delivery.
+    category: CLARIFY
+  - id: RT-002
+    reviewer: Client
+    comment: Remove the paragraph about optional training.
+    anchor: Optional training can be arranged on request.
+    category: REMOVE
+  - id: RT-003
+    reviewer: Client
+    comment: Move the risks paragraph to Section 3.
+    anchor: The main delivery risk is late access to client data.
+    category: MOVE
+  - id: RT-004
+    reviewer: Client
+    comment: Use a more convincing value proposition.
+    location:
+      section: "1"
+  - id: RT-005
+    reviewer: Client
+    comment: Make the overall tone more professional.

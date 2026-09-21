@@ -1,0 +1,26 @@
+version: 1
+issues:
+  - id: RT-001
+    reviewer: Prof. Adaeze Okafor
+    comment: Explain the major constructs of the Health Belief Model.
+    anchor: The Health Belief Model was used in this study.
+    location:
+      section: "2.1"
+    category: EXPLAIN
+    severity: major
+  - id: RT-002
+    reviewer: Prof. Adaeze Okafor
+    comment: Show how the model relates to the present study.
+    location:
+      section: "2.1"
+    category: EXPLAIN
+  - id: RT-003
+    reviewer: Prof. Adaeze Okafor
+    comment: Add recent references.
+    category: REFERENCE
+  - id: RT-004
+    reviewer: Prof. Adaeze Okafor
+    comment: Remove the repeated paragraph in Section 2.4.
+    location:
+      section: "2.4"
+    category: REMOVE
