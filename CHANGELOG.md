@@ -3,6 +3,12 @@
 All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/) and the project uses semantic versioning.
 
+## [0.2.0] - 2026-10-07
+
+### Added
+- `reviewtrace guard`: report unrequested changes between two DOCX files (protected wording,
+  numbers, removed hedging words, table changes). Number comparison ignores formatting.
+
 ## [0.1.0] - 2026-09-20
 
 First usable release.

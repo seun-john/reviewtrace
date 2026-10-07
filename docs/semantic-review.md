@@ -1,6 +1,6 @@
 # Semantic review (optional, disabled by default)
 
-Version 0.1.0 contains the interface and the policy for semantic review. It contains **no
+Version 0.2.0 contains the interface and the policy for semantic review. It contains **no
 provider adapters and no code that performs network I/O**, and the CLI has no switch that enables
 one. A caller who wants semantic review writes (or installs) an adapter, constructs it, and
 passes it to `run_audit(..., semantic=adapter)` or one of the `audit_*` functions in

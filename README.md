@@ -247,6 +247,23 @@ its own. The parent is `RESOLVED` only if every part is; if only one part was ad
 `PARTIALLY_RESOLVED` or `NEEDS_REVIEW`. Probable duplicate comments are flagged
 (`possible_duplicates`) but never merged, so each keeps its provenance.
 
+## Catching unrequested changes: `guard`
+
+`audit` asks whether the requested changes were made. `guard` asks the reverse: what else changed?
+
+```bash
+reviewtrace guard original.docx revised.docx --protect "Does exercise improve sleep quality?" --fail-on-flag
+```
+
+It reports, with evidence:
+
+- **Protected wording** that was removed or now appears a different number of times (`PROTECTED_REMOVED`, `PROTECTED_CHANGED`). A protected phrase that is not in the original is `INVALID_PROTECTION`, never a pass. Matching ignores case and whitespace.
+- **Numbers** added or removed. `12.5%` and `12.50%`, or `1,000` and `1000`, count as the same number.
+- **Hedging words** (may, might, could, suggests, likely, ...) that appear less often, which can mean a claim was strengthened.
+- **Table** content changes.
+
+It reads body, table and footnote text only. It cannot tell whether a change is wrong, and it does not compare formatting. Exit code 3 with `--fail-on-flag` when anything is flagged.
+
 ## Traceability matrix
 
 ```bash
@@ -348,7 +365,7 @@ reviewer. Design rules, enforced by `merge_assessment`:
 - Reports mark the source (`assessment_source: semantic` vs `deterministic`) and keep the
   deterministic status alongside.
 
-**Version 0.1.0 ships the interface and the merge policy only. It contains no provider
+**Version 0.2.0 ships the interface and the merge policy only. It contains no provider
 adapter** (Anthropic, OpenAI, Gemini, local or OpenAI-compatible endpoints are planned), and the
 CLI has no option to enable one. See [docs/semantic-review.md](docs/semantic-review.md).
 

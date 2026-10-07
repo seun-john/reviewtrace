@@ -50,6 +50,11 @@ class ReportFormat(str, Enum):
     csv = "csv"
 
 
+class GuardFormat(str, Enum):
+    terminal = "terminal"
+    json = "json"
+
+
 class MatrixFormat(str, Enum):
     markdown = "markdown"
     csv = "csv"
@@ -414,6 +419,41 @@ def inspect(
         typer.echo(f"Thread ({len(issue.thread)} repl{'y' if len(issue.thread) == 1 else 'ies'}):")
         for r in issue.thread:
             typer.echo(f"  {r.author or 'unknown'}: {md_escape(r.text)}")
+
+
+# -------------------------------------------------------------------------------------
+# guard
+# -------------------------------------------------------------------------------------
+
+
+@app.command()
+@guarded
+def guard(
+    original: Path = typer.Argument(..., help="The original .docx."),
+    revised: Path = typer.Argument(..., help="The revised .docx."),
+    protect: list[str] = typer.Option(
+        [], "--protect", "-p", help="Exact wording that must survive the revision. Repeatable."
+    ),
+    fmt: GuardFormat = typer.Option(GuardFormat.terminal, "--format", "-f", help="Output format."),
+    fail_on_flag: bool = typer.Option(
+        False, "--fail-on-flag", help=f"Exit with {EXIT_FAIL_ON} when anything is flagged."
+    ),
+) -> None:
+    """Find unrequested changes: protected wording, numbers and hedging words."""
+    from reviewtrace.guard import guard_revision
+
+    result = guard_revision(original, revised, protect)
+    if fmt is GuardFormat.json:
+        typer.echo(result.model_dump_json(indent=2))
+    else:
+        for f in result.findings:
+            typer.echo(f"{f.status.value:<20} {f.message}")
+            for key, value in f.evidence.items():
+                typer.echo(f"    {key}: {value}")
+        typer.echo("")
+        typer.echo(result.scope)
+    if fail_on_flag and result.flagged:
+        raise typer.Exit(EXIT_FAIL_ON)
 
 
 # -------------------------------------------------------------------------------------
