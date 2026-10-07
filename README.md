@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="ReviewTrace logo" width="420">
+</p>
+
 # ReviewTrace
 
 Review feedback should not disappear into a revised document.
