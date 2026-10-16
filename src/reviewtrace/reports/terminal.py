@@ -18,7 +18,7 @@ from reviewtrace.models.document import ReviewComment
 from reviewtrace.models.evidence import EvidenceDirection
 from reviewtrace.models.finding import STATUS_ORDER, Finding, Status
 from reviewtrace.models.issue import ReviewIssue
-from reviewtrace.models.report import AuditReport
+from reviewtrace.models.report import AuditReport, describe_coverage
 from reviewtrace.reports.matrix import MARKS
 from reviewtrace.utils.text import strip_control, truncate
 
@@ -142,6 +142,7 @@ def render_report(
         if counts[s] or s in (Status.RESOLVED, Status.UNRESOLVED):
             table.add_row(Text(s.label, style=STATUS_STYLE[s]), Text(str(counts[s])))
     console.print(table)
+    console.print(Text(f"Coverage: {describe_coverage(report.coverage)}", style="bold"))
     if not summary_only:
         console.print(Text("─" * min(console.width, 60), style="dim"))
         for issue in report.issues:

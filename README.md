@@ -183,6 +183,8 @@ suite. `python scripts/build_examples.py` regenerates those files.
 `audit` accepts `-f terminal|markdown|json|csv`, `-o FILE`, `--out-dir DIR`, `-v`, and
 `--fail-on unresolved|not-resolved` (exit status 3, for CI). It refuses to write over an input file.
 
+**Coverage.** Every audit report states how many comments got a verdict, in the `coverage` object of the JSON, in the terminal and in the Markdown report: `Coverage: decided 20 of 60 comments; 40 could not be checked (not_assessable_explain 24, needs_review 12, ...)`. A comment is decided when it came out `RESOLVED`, `PARTIALLY_RESOLVED` or `UNRESOLVED`; `NEEDS_REVIEW`, `NOT_ASSESSABLE` and `ERROR` are undecided, and a `NOT_ASSESSABLE` comment is grouped by its category so you can see which kinds of request cannot be judged from the text alone. `--min-coverage PCT` exits 4 when fewer than PCT percent of the comments were decided; `--fail-on` (exit 3) takes precedence. A high decided share is not accuracy: it says how much was examined.
+
 ## Word-comment workflow
 
 `reviewed.docx` contains the reviewer's comments; `revised.docx` is the response.

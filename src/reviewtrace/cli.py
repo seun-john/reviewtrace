@@ -16,7 +16,7 @@ from rich.console import Console
 from reviewtrace import __version__, core
 from reviewtrace.extractors.issues_file import issues_to_yaml
 from reviewtrace.models.finding import Status
-from reviewtrace.models.report import AuditReport
+from reviewtrace.models.report import AuditReport, decided_share
 from reviewtrace.reports.csv_report import render_csv
 from reviewtrace.reports.json_report import load_report, render_json, render_matrix_json
 from reviewtrace.reports.markdown import md_escape, render_markdown, render_matrix_markdown
@@ -41,6 +41,7 @@ app = typer.Typer(
 
 F = TypeVar("F", bound=Callable[..., Any])
 EXIT_FAIL_ON = 3
+EXIT_LOW_COVERAGE = 4
 
 
 class ReportFormat(str, Enum):
@@ -272,6 +273,14 @@ def audit(
     fail_on: FailOn | None = typer.Option(
         None, "--fail-on", help="Exit with status 3 when findings match (for CI)."
     ),
+    min_coverage: float | None = typer.Option(
+        None,
+        "--min-coverage",
+        min=0,
+        max=100,
+        help=f"Exit with {EXIT_LOW_COVERAGE} if fewer than this percent of comments got a "
+        "verdict (resolved, partly resolved or unresolved) and --fail-on did not trigger.",
+    ),
 ) -> None:
     """Audit whether reviewer comments were addressed in a revised document.
 
@@ -334,6 +343,11 @@ def audit(
         _emit(render_csv(report), output, protected, err, "CSV matrix")
     if fail_on is not None and _fails(report, fail_on):
         raise typer.Exit(EXIT_FAIL_ON)
+    share = decided_share(report.coverage)
+    if min_coverage is not None and (share is None or share < min_coverage):
+        shown = "no comments" if share is None else f"{share:g}% decided"
+        err.print(Text(f"Coverage {shown} is below --min-coverage {min_coverage:g}.", style="red"))
+        raise typer.Exit(EXIT_LOW_COVERAGE)
 
 
 # -------------------------------------------------------------------------------------

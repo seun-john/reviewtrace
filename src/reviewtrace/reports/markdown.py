@@ -10,7 +10,7 @@ import re
 
 from reviewtrace.models.evidence import EvidenceDirection
 from reviewtrace.models.finding import STATUS_ORDER
-from reviewtrace.models.report import AuditReport
+from reviewtrace.models.report import AuditReport, describe_coverage
 from reviewtrace.reports.matrix import CORE_COLUMNS, MARKS, build_matrix
 from reviewtrace.utils.text import truncate
 
@@ -157,6 +157,8 @@ def render_markdown(report: AuditReport) -> str:
     lines += ["", "## Summary", "", *_summary_table(report)]
     conf = report.confidence_counts()
     lines += [
+        "",
+        f"Coverage: {describe_coverage(report.coverage)}.",
         "",
         "Confidence: " + ", ".join(f"{c.value.lower()} {n}" for c, n in conf.items()) + ".",
         "",

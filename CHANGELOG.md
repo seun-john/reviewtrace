@@ -3,6 +3,11 @@
 All notable changes are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/) and the project uses semantic versioning.
 
+## Unreleased
+
+- Audit reports have a `coverage` block (comments decided or not, with reasons such as `not_assessable_explain` and `needs_review`), a `Coverage:` line in the terminal and Markdown reports, and the same block in the JSON.
+- `audit --min-coverage PCT`: exit 4 when fewer than PCT percent of comments were decided and `--fail-on` did not trigger.
+
 ## [0.2.0] - 2026-10-07
 
 ### Added
