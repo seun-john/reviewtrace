@@ -20,6 +20,15 @@ _WORD_NUMBERS = {
     "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
 }  # fmt: skip
 
+_WORDNUM = "|".join(_WORD_NUMBERS)
+_MONTHS = "january|february|march|april|may|june|july|august|september|october|november|december"
+# A value a reviewer can correct: a number (optionally followed by a unit word), a number word,
+# or a month. "18.6 million", "seven", "March".
+_UNIT = r"(?:\s+(?:million|billion|thousand|hundred|percent|per cent|percentage points?|%))?"
+_VAL = rf"(?:{_NUM}{_UNIT}|\b(?:{_WORDNUM})\b|\b(?:{_MONTHS})\b)"
+# "... is 18.6 million, not 16.8", "it should be seven, not five", "began in March, not May".
+_VALUE_NOT = re.compile(rf"({_VAL})\s*,\s*(?:and\s+)?(?:not|rather than|instead of)\s+({_VAL})", _I)
+
 _QUOTED = re.compile(r"[\"“]([^\"”]{2,200})[\"”]|(?<![\w])[‘']([^'’]{2,200})[’'](?![\w])")
 _REPLACE_QUOTED = re.compile(
     r"(?:change|replace|rename|retitle|revise|substitute|amend)\s+(?:the\s+(?:heading|title|word|term|phrase|text|name)\s+)?"
@@ -40,7 +49,9 @@ _INSTEAD_QUOTED = re.compile(
 _REPLACE_PLAIN = re.compile(r"\breplace\s+(.{2,60}?)\s+with\s+(.{2,60}?)\s*[.?!]?$", _I)
 
 _NUM_SHOULD_NOT = re.compile(
-    rf"should\s+(?:be|read|say|have been)\s+({_NUM})\s*,?\s*(?:and\s+)?not\s+({_NUM})", _I
+    rf"should\s+(?:be|read|say|have been)\s+({_NUM}|\b(?:{_WORDNUM})\b)\s*,?\s*(?:and\s+)?not\s+"
+    rf"({_NUM}|\b(?:{_WORDNUM})\b)",
+    _I,
 )
 _NUM_INSTEAD = re.compile(rf"({_NUM})\s*,?\s*(?:instead of|rather than|and not|not)\s+({_NUM})", _I)
 _NUM_CHANGE = re.compile(
@@ -49,6 +60,12 @@ _NUM_CHANGE = re.compile(
 _NUM_FROM_TO = re.compile(rf"from\s+({_NUM})\s+to\s+({_NUM})", _I)
 _NUM_SHOULD_BE = re.compile(
     rf"(?:should\s+(?:be|read|say)|must\s+be|is\s+actually|are\s+actually)\s+({_NUM})", _I
+)
+# "Staffing should read 34; the earlier draft number of 43 is out of date."
+_NUM_OUTDATED = re.compile(
+    rf"({_NUM})\s+(?:is|are|was|were)\s+(?:now\s+)?(?:out[ -]of[ -]date|outdated|wrong|incorrect|"
+    r"stale|obsolete|superseded)",
+    _I,
 )
 
 _TABLE_REF = re.compile(r"\btables?\s+([A-Za-z]?\d+(?:[.\-]\d+)*)\b", _I)
@@ -128,6 +145,15 @@ def _clean_number(n: str) -> str:
     return n.replace(",", "").replace("$", "")
 
 
+def _value(raw: str) -> str:
+    """The bare value of a matched `_VAL`: drop a trailing unit word, keep number words as written."""
+    text = raw.strip()
+    first = text.split()[0] if text.split() else text
+    if first.lower() in _WORD_NUMBERS or first.lower() in _MONTHS.split("|"):
+        return first
+    return _clean_number(re.match(_NUM, text).group(0)) if re.match(_NUM, text) else text
+
+
 def _concept_groups(text: str) -> tuple[list[list[str]], list[str]]:
     """Coordinated noun phrases such as "validity and reliability of the scale"."""
     body = re.sub(r"^\W*(?:[A-Za-z]+)\s+", "", strip_lead(text), count=1)  # drop the leading verb
@@ -187,9 +213,23 @@ def parse_request(text: str, want_concepts: bool = False) -> RequestSpec:
             if m2:
                 spec.numeric_correction = (_clean_number(m2.group(2)), _clean_number(m2.group(1)))
             else:
-                m2 = _NUM_SHOULD_BE.search(text)
+                m2 = _VALUE_NOT.search(text)
                 if m2:
-                    spec.numeric_correction = (None, _clean_number(m2.group(1)))
+                    new_value, old_value = _value(m2.group(1)), _value(m2.group(2))
+                    if old_value.lower() in _MONTHS.split("|"):
+                        if spec.replace_pair is None:
+                            spec.replace_pair = (old_value, new_value)
+                    else:
+                        spec.numeric_correction = (old_value, new_value)
+                else:
+                    m2 = _NUM_SHOULD_BE.search(text)
+                    if m2:
+                        new_value = _clean_number(m2.group(1))
+                        stale = _NUM_OUTDATED.search(text)
+                        old_value = _clean_number(stale.group(1)) if stale else None
+                        if old_value == new_value:
+                            old_value = None
+                        spec.numeric_correction = (old_value, new_value)
 
     spec.numbers = [_clean_number(n) for n in re.findall(_NUM, text)]
     spec.table_refs = [f"Table {n}" for n in _TABLE_REF.findall(text)]

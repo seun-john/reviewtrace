@@ -8,6 +8,7 @@ from reviewtrace import core
 from reviewtrace.models.evidence import Evidence, EvidenceDirection, EvidenceType
 from reviewtrace.models.finding import Confidence, Finding
 from reviewtrace.models.finding import Status as St
+from reviewtrace.models.issue import IssueCategory
 from tests.fixtures.docx_builder import Anchor, DocxBuilder, Ins
 from tests.helpers import audit_pair, make_issue, one
 
@@ -254,6 +255,71 @@ def test_numeric_correction_resolved_partial_unresolved(tmp_path):
         anchor=old,
     )
     assert f.status is St.NEEDS_REVIEW
+
+
+def test_value_stated_with_the_wrong_one_beside_it_is_a_correction(tmp_path):
+    """'... is 18.6 million, not 16.8.' reads as an observation but asks for a change."""
+    old = "The cost estimate in the appendix is 16.8 million."
+    new = "The cost estimate in the appendix is 18.6 million."
+    comment = "The cost estimate in the appendix is 18.6 million, not 16.8."
+    f = one(tmp_path, doc(old), doc(new), comment, anchor="16.8")
+    assert f.status is St.RESOLVED
+    f = one(tmp_path, doc(old), doc(old), comment, anchor="16.8")
+    assert f.status is St.UNRESOLVED
+    f = one(
+        tmp_path, doc(old), doc("The cost estimate is described elsewhere."), comment, anchor="16.8"
+    )
+    assert f.status is St.NEEDS_REVIEW
+
+
+def test_number_words_and_digits_count_as_the_same_value(tmp_path):
+    comment = "Count is wrong: it should be seven, not five."
+    old = "There were five regional offices."
+    spelled = "There were seven regional offices."
+    digits = "There were 7 regional offices."
+    assert one(tmp_path, doc(old), doc(spelled), comment, anchor="five").status is St.RESOLVED
+    assert one(tmp_path, doc(old), doc(digits), comment, anchor="five").status is St.RESOLVED
+    assert one(tmp_path, doc(old), doc(old), comment, anchor="five").status is St.UNRESOLVED
+
+
+def test_month_correction(tmp_path):
+    comment = "Baseline began in March, not May (see the fieldwork log)."
+    old = "Baseline data collection began in May."
+    new = "Baseline data collection began in March."
+    assert one(tmp_path, doc(old), doc(new), comment, anchor="May").status is St.RESOLVED
+    assert one(tmp_path, doc(old), doc(old), comment, anchor="May").status is St.UNRESOLVED
+
+
+def test_outdated_value_names_the_old_number(tmp_path):
+    comment = "Staffing should read 34; the earlier draft number of 43 is out of date."
+    old = "The programme employs 43 staff."
+    new = "The programme employs 34 staff."
+    assert one(tmp_path, doc(old), doc(new), comment, anchor="43").status is St.RESOLVED
+    assert one(tmp_path, doc(old), doc(old), comment, anchor="43").status is St.UNRESOLVED
+
+
+def test_a_digit_target_never_matches_the_word_one(tmp_path):
+    comment = "The number of sites is 2, not 1."
+    old = "The study covered 1 site, one of the largest."
+    new = "The study covered one site, one of the largest."
+    f = one(tmp_path, doc(old), doc(new), comment, anchor="1 site")
+    assert f.status is not St.RESOLVED  # 'one' in the new text is not the number 2
+
+
+@pytest.mark.parametrize("comment", ["I like the 5, not the layout.", "Good, not great."])
+def test_other_uses_of_not_are_not_corrections(comment):
+    from reviewtrace.analysis.classifier import classify
+    from reviewtrace.analysis.request_spec import parse_request
+
+    assert parse_request(comment).numeric_correction is None
+    assert classify(comment).category is not IssueCategory.CORRECT
+
+
+def test_a_question_about_a_value_is_not_classified_as_a_correction():
+    from reviewtrace.analysis.classifier import classify
+
+    assert classify("Why 3, not 4?").category is not IssueCategory.CORRECT
+    assert classify("The total is 3, not 4.").category is IssueCategory.CORRECT
 
 
 def test_number_boundaries_are_respected(tmp_path):

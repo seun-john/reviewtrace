@@ -136,9 +136,25 @@ def numbers_in(text: str) -> list[str]:
     return [m.group(0).replace(",", "") for m in _NUMBER.finditer(text)]
 
 
+_NUMBER_WORDS = {
+    "one": "1", "two": "2", "three": "3", "four": "4", "five": "5",
+    "six": "6", "seven": "7", "eight": "8", "nine": "9", "ten": "10",
+}  # fmt: skip
+
+
 def contains_number(text: str, number: str) -> int:
-    """Count exact occurrences of ``number`` (so ``39`` does not match inside ``396``)."""
+    """Count exact occurrences of ``number`` (so ``39`` does not match inside ``396``).
+
+    When the number is given as a word (``seven``) it matches both the word and its digits,
+    because a revision may write either. A digit target does not match words: ``one`` is too
+    common a word to count as the number 1.
+    """
     target = number.replace(",", "")
+    word = target.lower()
+    if word in _NUMBER_WORDS:
+        digits = _NUMBER_WORDS[word]
+        spelled = len(re.findall(rf"(?<![\w.]){word}(?![\w])", text, re.I))
+        return spelled + sum(1 for n in numbers_in(text) if n == digits)
     return sum(1 for n in numbers_in(text) if n == target)
 
 

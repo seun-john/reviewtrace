@@ -5,6 +5,7 @@ All notable changes are recorded here. The format follows
 
 ## Unreleased
 
+- Value corrections written as a statement are now assessed: "The cost is 18.6 million, not 16.8", "it should be seven, not five", "began in March, not May" and "Staffing should read 34; 43 is out of date". Number words and digits count as the same value (a digit target never matches the word "one"). A question such as "Why 3, not 4?" is still not a correction. On the 30 study artifacts this decides 10 more comments, all correctly.
 - Audit reports have a `coverage` block (comments decided or not, with reasons such as `not_assessable_explain` and `needs_review`), a `Coverage:` line in the terminal and Markdown reports, and the same block in the JSON.
 - `audit --min-coverage PCT`: exit 4 when fewer than PCT percent of comments were decided and `--fail-on` did not trigger.
 

@@ -20,6 +20,18 @@ MAX_PARTS = 8
 
 _I = re.I
 
+# "... is 18.6 million, not 16.8", "should be seven, not five", "began in March, not May":
+# a value stated with the wrong one beside it is a request to correct it.
+_V = (
+    r"(?:\$?\d[\d,]*(?:\.\d+)?%?|\b(?:one|two|three|four|five|six|seven|eight|nine|ten)\b|"
+    r"\b(?:january|february|march|april|may|june|july|august|september|october|november|december)\b)"
+)
+_VALUE_NOT = re.compile(
+    rf"{_V}(?:\s+(?:million|billion|thousand|hundred|percent|per cent|percentage points?|%))?"
+    rf"\s*,\s*(?:and\s+)?(?:not|rather than|instead of)\s+{_V}",
+    _I,
+)
+
 # (pattern, category). The earliest match in the comment picks the primary category.
 _ACTION_RULES: list[tuple[re.Pattern[str], IssueCategory]] = [
     (
@@ -186,6 +198,10 @@ def classify(comment: str) -> Classification:
         m = pattern.search(text)
         if m:
             hits.append((m.start(), prio, cat))
+    # A question ("Why 3, not 4?") asks about a value; a statement ("It is 3, not 4.") corrects it.
+    value_fix = _VALUE_NOT.search(text)
+    if value_fix and not text.rstrip().endswith("?"):
+        hits.append((value_fix.start(), len(_ACTION_RULES), C.CORRECT))
     hits.sort()
     subjective = bool(_SUBJECTIVE.search(text))
     directive = bool(_DIRECTIVE_HINT.search(text))
