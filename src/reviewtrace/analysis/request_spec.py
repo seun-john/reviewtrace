@@ -151,7 +151,8 @@ def _value(raw: str) -> str:
     first = text.split()[0] if text.split() else text
     if first.lower() in _WORD_NUMBERS or first.lower() in _MONTHS.split("|"):
         return first
-    return _clean_number(re.match(_NUM, text).group(0)) if re.match(_NUM, text) else text
+    number = re.match(_NUM, text)
+    return _clean_number(number.group(0)) if number else text
 
 
 def _concept_groups(text: str) -> tuple[list[list[str]], list[str]]:
@@ -226,10 +227,10 @@ def parse_request(text: str, want_concepts: bool = False) -> RequestSpec:
                     if m2:
                         new_value = _clean_number(m2.group(1))
                         stale = _NUM_OUTDATED.search(text)
-                        old_value = _clean_number(stale.group(1)) if stale else None
-                        if old_value == new_value:
-                            old_value = None
-                        spec.numeric_correction = (old_value, new_value)
+                        stale_value = _clean_number(stale.group(1)) if stale else None
+                        if stale_value == new_value:
+                            stale_value = None
+                        spec.numeric_correction = (stale_value, new_value)
 
     spec.numbers = [_clean_number(n) for n in re.findall(_NUM, text)]
     spec.table_refs = [f"Table {n}" for n in _TABLE_REF.findall(text)]
